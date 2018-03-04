@@ -108,12 +108,12 @@ exports.testCmd = (rl,id)  => {
 				s= t.toUpperCase();
 
 				if(ans===s){
-					log(` Su respuesta es:`);
+					log(` Su respuesta es correcta.`);
 					biglog('Correcta', 'green');
 					rl.prompt();
 				}
 				else{
-					log(` Su respuesta es:`);
+					log(` Su respuesta es incorrecta.`);
 					biglog('Incorreta', 'red');
 					rl.prompt();
 				}
