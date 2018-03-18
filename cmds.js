@@ -129,10 +129,10 @@ exports.editCmd = (rl,id)=> {
 		return makeQuestion(rl, ' Introduzca la pregunta: ')
 		.then(q =>{
 			process.stdout.isTTY && setTimeout(()=> {rl.write(quiz.answer)},0);
-			return mskeQuestion(rl, ' Introduzca una respuesta: ')
+			return makeQuestion(rl, ' Introduzca una respuesta: ')
 			.then(a =>{
 				quiz.question=q;
-				quiz.asnwer=a;
+				quiz.answer=a;
 				return quiz;
 			});
 		});
@@ -141,7 +141,7 @@ exports.editCmd = (rl,id)=> {
 		return quiz.save();
 	})
 	.then(quiz=>{
-		log(` Se ha cambiado el quiz ${colorize(id,'magenta')} por: ${question} ${colorize('=>','magenta')} ${answer}`);				
+		log(` Se ha cambiado el quiz ${colorize(id,'magenta')} por: ${quiz.question} ${colorize('=>','magenta')} ${quiz.answer}`);				
 	})
 	.catch(Sequelize.ValidationError, error =>{
 		errorlog('El quiz es erroneo:');
@@ -158,19 +158,15 @@ exports.editCmd = (rl,id)=> {
 };
 
 exports.testCmd = (rl,id)  => {
-	if(typeof id === "undefined"){
-		errorlog(`Falta el parámetro id.`);
-		rl.prompt();
-	} else {
-		try{
-			const quiz = model.getByIndex(id);
-			rl.question(colorize(` ${quiz.question}? `, 'red'), answer =>{
-				ans1= (answer || "").trim();
-				ans=ans1.toUpperCase();
-				t=JSON.parse(JSON.stringify(quiz.answer));
-				s= t.toUpperCase();
-
-				if(ans===s){
+	validateId(id)
+	.then(id => models.quiz.findById(id))
+	.then(quiz=>{
+		if(!quiz){
+			throw new error(`No existe un quiz asociado al id= ${id}.`);
+		}
+		return makeQuestion(rl, ` ${quiz.question}? `)
+		.then(a=>{
+			if(a===quiz.answer){
 					log(` Su respuesta es correcta.`);
 					biglog('Correcta', 'green');
 					rl.prompt();
@@ -180,13 +176,11 @@ exports.testCmd = (rl,id)  => {
 					biglog('Incorreta', 'red');
 					rl.prompt();
 				}
-			});
-		}		
-		catch(error){
-			errorlog(error.message);
-			rl.prompt();
-		}
-	}
+
+		})
+
+
+});
 };
 
 exports.playCmd = rl  => {
