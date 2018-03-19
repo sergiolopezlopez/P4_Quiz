@@ -1,7 +1,7 @@
 {
   "name": "quiz",
   "version": "1.0.0",
-  "description": "P`royecto Quiz",
+  "description": "Proyecto Quiz",
   "main": "main.js",
   "scripts": {
     "start": "node main.js",

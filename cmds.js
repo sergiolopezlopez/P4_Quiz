@@ -22,7 +22,7 @@ exports.helpCmd = rl => {
 exports.listCmd = rl => {
 	models.quiz.findAll()
 	.each(quiz=>{
-			log(` [${colorize(quiz.id, 'magenta')}]: ${quiz.question}`);
+		log(` [${colorize(quiz.id, 'magenta')}]: ${quiz.question}`);
 	})
 	.catch(error => {
 		errorlog(error.message);
@@ -77,36 +77,33 @@ const makeQuestion = (rl, text)=> {
 	});
 };
 
-exports.addCmd = rl  => {
-
-	makeQuestion(rl,' Introduzca una pregunta: ')
-	.then(q=>{
-		return makeQuestion(rl,' Introduzca la respuesta ')
-		.then(a=>{
+exports.addCmd = rl => {
+    makeQuestion(rl, 'Introduzca una pregunta: ')
+	.then(q => {
+		return makeQuestion(rl, 'Introduzca la respuesta ')
+		.then(a => {
 			return {question: q, answer: a};
 		});
 	})
 	.then(quiz => {
 		return models.quiz.create(quiz);
 	})
-	.then((quiz)=>{
+	.then((quiz) => {
 		log(` ${colorize('Se ha añadido','magenta')}: ${quiz.question} ${colorize('=>','magenta')} ${quiz.answer}`);
-			
 	})
-	.catch(Sequelize.ValidationError, error =>{
+	.catch(Sequelize.ValidationError, error => {
 		errorlog('El quiz es erroneo:');
-		error.errors.forEach(({message})=> errorlog(message));
-
+		error.errors.forEach(({message}) => errorlog(message));
 	})
 	.catch(error => {
 		errorlog(error.message);
 	})
-	.then(()=>{
+	.then(() => {
 		rl.prompt();
 	});
 };
 
-exports.deleteCmd = (rl,id) => {
+/*exports.deleteCmd = (rl,id) => {
 
 	validateId(id)
 	.then(id=> models.quiz.destroy({where: {id}}))
@@ -116,7 +113,18 @@ exports.deleteCmd = (rl,id) => {
 	.then (()=>{
 		rl.prompt();
 	});
+};*/
+exports.deleteCmd = (rl,id) => {
+	validateId(id)
+	.then(id => models.quiz.destroy({where: {id}}))
+	.catch(error => {
+		errorlog(error.message);
+	})
+	.then(() => {
+		rl.prompt();
+	});
 };
+
 
 exports.editCmd = (rl,id)=> {
 	validateId(id)
@@ -166,88 +174,120 @@ exports.testCmd = (rl,id)  => {
 		}
 		return makeQuestion(rl, ` ${quiz.question}? `)
 		.then(a=>{
-			if(a===quiz.answer){
-					log(` Su respuesta es correcta.`);
-					biglog('Correcta', 'green');
-					rl.prompt();
-				}
-				else{
-					log(` Su respuesta es incorrecta.`);
-					biglog('Incorreta', 'red');
-					rl.prompt();
-				}
+			ans1= (a || "").trim();
+			ans=ans1.toUpperCase();
+			t=JSON.parse(JSON.stringify(quiz.answer));
+			s= t.toUpperCase();
+
+			if(ans===s){
+				log(` Su respuesta es correcta.`);
+				biglog('Correcta', 'green');
+				
+			}
+			else{
+				log(` Su respuesta es incorrecta.`);
+				biglog('Incorreta', 'red');
+				
+			}
 
 		})
+	})
+	.catch(Sequelize.ValidationError, error =>{
+		errorlog('El quiz es erroneo:');
+		error.errors.forEach(({message})=> errorlog(message));
+	})
+	.catch(error => {
+		errorlog(error.message);
+	})
+	.then(()=>{
+		rl.prompt();
+	});
 
 
-});
+	
 };
 
 exports.playCmd = rl  => {
 	let score = 0;
 	let toBeResolved= [];
-	let num=0;
-	let quizzesplay = [model.quizzes];
-	model.getAll().forEach((quiz,id)=> {
-		toBeResolved[id]=id;
-		num=num+1;
-	});	
+	
+	models.quiz.findAll({raw: true})
+	.then( quizzes =>{
+		toBeResolved = quizzes;
+	})
+	.then(() => {
+		return playOne();
+	})
+	.catch(error => {
+		console.log(error);
+	})
+	.then(()=>{
+		rl.prompt();
+	});
+
 
 	const playOne=()=>{
-		if(num===0){
-			log(` No hay nada más que preguntar.`);
-			log(` Fin del examen. Aciertos: `);
-			biglog( `${score} `, 'magenta');
-			rl.prompt();
+		return new Promise((resolve,reject)=>{
+			if(toBeResolved.length<=0){
+				log(` No hay nada más que preguntar.`);
+				log(` Fin del examen. Aciertos: `);
+				biglog( `${score} `, 'magenta');
+				resolve();
+				return;
 
-		}  else{
-			try{
-				let idr = Math.random()*num;
-				let ids= Math.floor(idr);
-				const quiz = model.getByIndex(toBeResolved[ids]);
-				toBeResolved[ids]=null;
-				let m=0;
 
-				for (var i = 0; i <num; i++) {
-					if(toBeResolved[i]!== null){
-						toBeResolved[m]=toBeResolved[i];
-						m++;
-					} 
+			}  else{
+				try{
+					let idr = Math.random()*toBeResolved.length;
+					let ids= Math.floor(idr);
+					const quiz = toBeResolved[ids];
+					/*toBeResolved[ids]=null;
+					let m=0;
+
+					for (var i = 0; i <num; i++) {
+						if(toBeResolved[i]!== null){
+							toBeResolved[m]=toBeResolved[i];
+							m++;
+						} 
+					}
+
+					num--;*/
+					toBeResolved.splice(ids,1);
+
+					makeQuestion(rl, ` ${quiz.question}? `)
+					.then( answer=>{
+						ans1= (answer || "").trim();
+						ans=ans1.toUpperCase();
+						t=JSON.parse(JSON.stringify(quiz.answer));
+						s= t.toUpperCase();
+						console.log(s);
+						console.log(ans);
+						if(ans===s){
+							score=score+1;
+							log(` CORRECTO - Lleva ${score} aciertos.`);
+							rl.prompt();
+							resolve(playOne());
+						}
+						else{
+							log(` INCORRECTO.`);
+							log(` Fin del examen. Aciertos: `);
+							biglog(` ${score}`, 'magenta');
+							rl.prompt();
+							resolve();
+						}
+						});
+					
 				}
-
-				num--;
-				rl.question(colorize(` ${quiz.question}? `, 'red'),answer=>{
-					ans1= (answer || "").trim();
-					ans=ans1.toUpperCase();
-					t=JSON.parse(JSON.stringify(quiz.answer));
-					s= t.toUpperCase();
-
-					if(ans===s){
-						score=score+1;
-						log(` CORRECTO - Lleva ${score} aciertos.`);
-						rl.prompt();
-						playOne();
-					}
-					else{
-						log(` INCORRECTO.`);
-						log(` Fin del examen. Aciertos: `);
-						biglog(` ${score}`, 'magenta');
-						rl.prompt();
-					}
-				});
+				catch(error){
+					errorlog(error.message);
+					rl.prompt();
+				}
 			}
-			catch(error){
-			errorlog(error.message);
-			rl.prompt();
-		}
-		}
+		})
 	};
-	playOne();
+
+
 };
-
-
-
-
 
 exports.creditsCmd = rl => {
 	log("Autor de la práctica:");
