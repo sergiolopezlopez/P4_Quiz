@@ -219,14 +219,14 @@ exports.playCmd =( socket,rl ) => {
 		return playOne();
 	})
 	.catch(error => {
-		console.log(socket,error);
+		log(socket,error);
 	})
 	.then(()=>{
 		rl.prompt();
 	});
 
 
-	const playOne=(socket)=>{
+	const playOne=()=>{
 		return new Promise((resolve,reject)=>{
 			if(toBeResolved.length<=0){
 				log(socket,` No hay nada más que preguntar.`);
